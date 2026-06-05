@@ -27,17 +27,6 @@ If one player is caught… **both lose.**
 
 ---
 
-## 🧠 Why This Project Matters
-
-| For YouTube Playables | For GitHub Portfolio |
-| :--- | :--- |
-| ✅ First extraction-horror game on the platform | ✅ Clean vanilla JS (no frameworks) |
-| ✅ 2-player offline pass-and-play | ✅ Full Canvas rendering engine |
-| ✅ Session-based (3-5 min rounds) | ✅ State management, collision, AI |
-| ✅ Ready for SDK integration | ✅ MIT licensed — fork and learn |
-
----
-
 ## 🛠️ Tech Stack
 
 - **HTML5 Canvas** — rendering
