@@ -179,3 +179,22 @@ body {
         border-radius: 20px;
     }
 }
+.sound-toggle {
+    background: #1a1a2a;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #aaa;
+    transition: all 0.2s;
+}
+
+.sound-toggle:hover {
+    background: #2a2a3a;
+    color: white;
+    transform: scale(1.02);
+}
