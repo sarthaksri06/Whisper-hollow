@@ -3,59 +3,383 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Whisper Hollow - 2P Co-op Horror</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Whisper Hollow | 2-Player Co-op Horror</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at 30% 20%, #0a0a0f, #020208);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .game-wrapper {
+            padding: 20px;
+        }
+
+        /* Canvas */
+        .canvas-stage {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        canvas {
+            display: block;
+            background: #0c0c14;
+            cursor: none;
+        }
+
+        /* Bottom bar */
+        .game-bar {
+            margin-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Player cards */
+        .player-card {
+            flex: 1;
+            background: rgba(16, 16, 24, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .player-card[data-player="1"] {
+            border-left: 3px solid #ff4d4d;
+        }
+
+        .player-card[data-player="2"] {
+            border-left: 3px solid #4d8aff;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .avatar.p1 {
+            background: linear-gradient(135deg, #ff4d4d, #cc2222);
+            box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+            color: white;
+        }
+
+        .avatar.p2 {
+            background: linear-gradient(135deg, #4d8aff, #2255cc);
+            box-shadow: 0 4px 12px rgba(77, 138, 255, 0.3);
+            color: white;
+        }
+
+        .player-details {
+            flex: 1;
+        }
+
+        .player-title {
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            color: #aaa;
+        }
+
+        .key-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+
+        kbd {
+            background: #0a0a10;
+            border-radius: 8px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: monospace;
+            color: #ccc;
+            border: 1px solid #2a2a30;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 30px;
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+        }
+
+        .status-badge.dead {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+        }
+
+        /* Center panel */
+        .info-panel {
+            background: rgba(16, 16, 24, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 8px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .relic-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .relic-badge {
+            width: 40px;
+            height: 40px;
+            background: rgba(251, 191, 36, 0.12);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .relic-counter {
+            font-weight: 800;
+            font-size: 26px;
+            color: #fbbf24;
+            letter-spacing: -1px;
+        }
+
+        .relic-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Buttons */
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px 22px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            transform: scale(0.97);
+        }
+
+        .btn-sound {
+            background: rgba(16, 16, 24, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 48px;
+            height: 48px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.2s;
+        }
+
+        .btn-sound:hover {
+            background: rgba(30, 30, 40, 0.9);
+            transform: scale(0.96);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.88);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #14141c, #0c0c14);
+            border-radius: 36px;
+            padding: 42px 56px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: modalPop 0.28s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.94) translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-icon {
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 20px;
+            border-radius: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+        }
+
+        .modal-icon.win {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid #4ade80;
+        }
+
+        .modal-icon.lose {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+        }
+
+        .modal h2 {
+            font-size: 30px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .modal p {
+            color: #888;
+            margin-bottom: 28px;
+        }
+
+        .modal-btn {
+            background: #2a2a34;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 14px;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .modal-btn:hover {
+            background: #3a3a44;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1000px) {
+            .game-wrapper { transform: scale(0.92); transform-origin: center; }
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <canvas id="gameCanvas" width="1000" height="600"></canvas>
-        
-        <div class="controls-panel">
-            <div class="player-controls">
-                <div class="player-card player1-card">
-                    <h3>👤 Player 1 (Red)</h3>
-                    <div class="keys">
-                        <span class="key">W/A/S/D</span> - Move
+    <div class="game-wrapper">
+        <div class="canvas-stage">
+            <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        </div>
+
+        <div class="game-bar">
+            <!-- Player 1 -->
+            <div class="player-card" data-player="1">
+                <div class="avatar p1">P1</div>
+                <div class="player-details">
+                    <div class="player-title">VANGUARD</div>
+                    <div class="key-row">
+                        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
                     </div>
-                    <div class="status" id="p1Status">🟢 Alive</div>
                 </div>
-                <div class="player-card player2-card">
-                    <h3>👤 Player 2 (Blue)</h3>
-                    <div class="keys">
-                        <span class="key">↑/←/↓/→</span> - Move
-                    </div>
-                    <div class="status" id="p2Status">🟢 Alive</div>
-                </div>
+                <div class="status-badge" id="p1Status">ACTIVE</div>
             </div>
-            <div class="game-info">
-                <div class="relic-counter">
-                    🔮 Relics Found: <span id="relicCount">0</span> / <span id="totalRelics">3</span>
+
+            <!-- Center -->
+            <div class="info-panel">
+                <div class="relic-group">
+                    <div class="relic-badge">🔮</div>
+                    <div>
+                        <div class="relic-counter"><span id="relicCount">0</span>/<span id="totalRelics">3</span></div>
+                        <div class="relic-label">REMAINING</div>
+                    </div>
                 </div>
-                <button id="resetBtn">🔄 New Game</button>
-                <button class="sound-toggle" id="soundBtn" onclick="toggleSound()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M3 10V14H7L12 19V5L7 10H3Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        <path d="M16 8C18 9.5 18 14.5 16 16" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        <path d="M19 5C22 8 22 16 19 19" stroke="currentColor" stroke-width="1.5" fill="none"/>
-    </svg>
+                <button class="btn-reset" id="resetBtn">
+                    <span>⟳</span> NEW GAME
                 </button>
             </div>
-        </div>
-        
-        <div id="winMessage" class="message-overlay hidden">
-            <div class="message-content">
-                <h2>✨ ESCAPE SUCCESSFUL! ✨</h2>
-                <p>Both players escaped the hollow!</p>
-                <button onclick="resetGame()">Play Again</button>
+
+            <!-- Player 2 -->
+            <div class="player-card" data-player="2">
+                <div class="avatar p2">P2</div>
+                <div class="player-details">
+                    <div class="player-title">SPECTRE</div>
+                    <div class="key-row">
+                        <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
+                    </div>
+                </div>
+                <div class="status-badge" id="p2Status">ACTIVE</div>
             </div>
+
+            <!-- Sound -->
+            <div class="btn-sound" id="soundBtn">🔊</div>
         </div>
-        
-        <div id="loseMessage" class="message-overlay hidden">
-            <div class="message-content">
-                <h2>💀 THE HOLLOW CLAIMED YOU 💀</h2>
-                <p>A spirit caught a player...</p>
-                <button onclick="resetGame()">Try Again</button>
-            </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="winModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-icon win">✨</div>
+            <h2>ESCAPE SUCCESSFUL</h2>
+            <p>Both souls fled the hollow</p>
+            <button class="modal-btn" onclick="resetGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <div id="loseModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-icon lose">💀</div>
+            <h2>THE HOLLOW CLAIMS ALL</h2>
+            <p>A spirit consumed one of you</p>
+            <button class="modal-btn" onclick="resetGame()">TRY AGAIN</button>
         </div>
     </div>
 
