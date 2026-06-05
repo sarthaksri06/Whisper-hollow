@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Whisper Hollow - 2P Co-op Horror</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        
+        <div class="controls-panel">
+            <div class="player-controls">
+                <div class="player-card player1-card">
+                    <h3>👤 Player 1 (Red)</h3>
+                    <div class="keys">
+                        <span class="key">W/A/S/D</span> - Move
+                    </div>
+                    <div class="status" id="p1Status">🟢 Alive</div>
+                </div>
+                <div class="player-card player2-card">
+                    <h3>👤 Player 2 (Blue)</h3>
+                    <div class="keys">
+                        <span class="key">↑/←/↓/→</span> - Move
+                    </div>
+                    <div class="status" id="p2Status">🟢 Alive</div>
+                </div>
+            </div>
+            <div class="game-info">
+                <div class="relic-counter">
+                    🔮 Relics Found: <span id="relicCount">0</span> / <span id="totalRelics">3</span>
+                </div>
+                <button id="resetBtn">🔄 New Game</button>
+            </div>
+        </div>
+        
+        <div id="winMessage" class="message-overlay hidden">
+            <div class="message-content">
+                <h2>✨ ESCAPE SUCCESSFUL! ✨</h2>
+                <p>Both players escaped the hollow!</p>
+                <button onclick="resetGame()">Play Again</button>
+            </div>
+        </div>
+        
+        <div id="loseMessage" class="message-overlay hidden">
+            <div class="message-content">
+                <h2>💀 THE HOLLOW CLAIMED YOU 💀</h2>
+                <p>A spirit caught a player...</p>
+                <button onclick="resetGame()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
