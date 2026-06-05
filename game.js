@@ -1,8 +1,206 @@
 // Whisper Hollow - 2 Player Co-op Horror Extraction Game
 // Playable offline on YouTube Playables
+// Full audio integration - no external files
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// ========== AUDIO SYSTEM (Procedural Sound Effects) ==========
+// No external files — all sounds generated via Web Audio API
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let soundEnabled = true;
+
+// Initialize audio on first user interaction (required by browsers)
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new AudioContext();
+    
+    // Resume if suspended (browsers auto-suspend until user interaction)
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+// Generate a "footstep" sound
+function playFootstep() {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.value = 120;
+        gain.gain.value = 0.08;
+        
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.1);
+        osc.stop(now + 0.1);
+    } catch(e) { console.log('Audio error:', e); }
+}
+
+// Generate "relic collected" chime
+function playRelicSound() {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        
+        // First note (higher)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.type = 'sine';
+        osc1.frequency.value = 880;
+        gain1.gain.value = 0.15;
+        osc1.start();
+        gain1.gain.exponentialRampToValueAtTime(0.00001, now + 0.3);
+        osc1.stop(now + 0.3);
+        
+        // Second note (lower, slight delay)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.value = 660;
+        gain2.gain.value = 0.12;
+        osc2.start(now + 0.08);
+        gain2.gain.exponentialRampToValueAtTime(0.00001, now + 0.38);
+        osc2.stop(now + 0.38);
+    } catch(e) {}
+}
+
+// Generate "spirit growl" (low, distorted rumble)
+function playSpiritSound() {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.value = 80;
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+        gain.gain.value = 0.2;
+        
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.6);
+        osc.stop(now + 0.6);
+    } catch(e) {}
+}
+
+// Generate "death" sound (falling tone)
+function playDeathSound() {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.value = 440;
+        gain.gain.value = 0.2;
+        
+        osc.start();
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.5);
+        osc.stop(now + 0.5);
+    } catch(e) {}
+}
+
+// Generate "victory" fanfare
+function playVictorySound() {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.value = 0.12;
+            const startTime = now + (i * 0.12);
+            osc.start(startTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, startTime + 0.3);
+            osc.stop(startTime + 0.3);
+        });
+    } catch(e) {}
+}
+
+// Generate "ambient drone" (looping background)
+let ambientSource = null;
+let ambientGain = null;
+
+function startAmbientDrone() {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        if (ambientSource) return;
+        
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        ambientGain = audioCtx.createGain();
+        
+        osc.connect(ambientGain);
+        ambientGain.connect(audioCtx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.value = 55;
+        ambientGain.gain.value = 0.03;
+        
+        osc.start();
+        ambientSource = osc;
+    } catch(e) {}
+}
+
+function stopAmbientDrone() {
+    if (!ambientSource) return;
+    try {
+        if (ambientGain) {
+            ambientGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1);
+        }
+        ambientSource.stop(audioCtx.currentTime + 1);
+        ambientSource = null;
+    } catch(e) {}
+}
+
+// Toggle sound on/off
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    if (!soundEnabled && ambientSource) {
+        stopAmbientDrone();
+    } else if (soundEnabled && !ambientSource && gameRunning) {
+        startAmbientDrone();
+    }
+    const soundBtn = document.getElementById('soundBtn');
+    if (soundBtn) {
+        soundBtn.style.opacity = soundEnabled ? '1' : '0.5';
+    }
+    return soundEnabled;
+}
 
 // ========== GAME CONFIGURATION ==========
 const MAP_WIDTH = 1000;
@@ -15,11 +213,12 @@ const EXIT_SIZE = 40;
 // ========== GAME STATE ==========
 let gameRunning = true;
 let winCondition = false;
+let footstepCounter = 0;
 
 // Players
 const players = {
-    p1: { x: 150, y: 300, size: PLAYER_SIZE, color: '#ff4444', colorLight: '#ff6666', alive: true, keys: { w: false, s: false, a: false, d: false } },
-    p2: { x: 850, y: 300, size: PLAYER_SIZE, color: '#4488ff', colorLight: '#66aaff', alive: true, keys: { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false } }
+    p1: { x: 150, y: 300, size: PLAYER_SIZE, color: '#ff4d4d', colorLight: '#ff6b6b', alive: true, lastX: 150, lastY: 300, keys: { w: false, s: false, a: false, d: false } },
+    p2: { x: 850, y: 300, size: PLAYER_SIZE, color: '#4d8aff', colorLight: '#6ba0ff', alive: true, lastX: 850, lastY: 300, keys: { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false } }
 };
 
 // Relics
@@ -35,7 +234,6 @@ let exitGate = { x: 950, y: 50, size: EXIT_SIZE, active: false };
 
 // Effects
 let particles = [];
-let fogLayers = [];
 
 // ========== INITIALIZATION ==========
 function initGame() {
@@ -45,8 +243,8 @@ function initGame() {
     updateRelicDisplay();
     
     // Reset players
-    players.p1 = { ...players.p1, x: 150, y: 300, alive: true };
-    players.p2 = { ...players.p2, x: 850, y: 300, alive: true };
+    players.p1 = { ...players.p1, x: 150, y: 300, alive: true, lastX: 150, lastY: 300 };
+    players.p2 = { ...players.p2, x: 850, y: 300, alive: true, lastX: 850, lastY: 300 };
     
     // Reset spirit
     spirit = { x: 500, y: 300, size: SPIRIT_SIZE, active: false, anger: 0, targetPlayer: null };
@@ -65,10 +263,13 @@ function initGame() {
     exitGate.active = false;
     
     // Hide messages
-    document.getElementById('winMessage').classList.add('hidden');
-    document.getElementById('loseMessage').classList.add('hidden');
+    document.getElementById('winOverlay').classList.add('hidden');
+    document.getElementById('loseOverlay').classList.add('hidden');
     
     updateStatusDisplay();
+    
+    // Start ambient drone
+    startAmbientDrone();
 }
 
 // ========== INPUT HANDLING ==========
@@ -110,6 +311,7 @@ document.addEventListener('keyup', (e) => {
 document.getElementById('resetBtn').addEventListener('click', () => resetGame());
 
 function resetGame() {
+    stopAmbientDrone();
     initGame();
 }
 
@@ -120,6 +322,9 @@ const SPEED = 3.5;
 
 function movePlayer(player, keys, up, down, left, right) {
     if (!player.alive) return;
+    
+    player.lastX = player.x;
+    player.lastY = player.y;
     
     let newX = player.x;
     let newY = player.y;
@@ -140,6 +345,18 @@ function movePlayer(player, keys, up, down, left, right) {
 function updateMovement() {
     movePlayer(players.p1, players.p1.keys, 'w', 's', 'a', 'd');
     movePlayer(players.p2, players.p2.keys, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight');
+    
+    // Footstep sounds (throttled to avoid spam)
+    footstepCounter++;
+    if (footstepCounter > 8) {
+        footstepCounter = 0;
+        if ((players.p1.x !== players.p1.lastX || players.p1.y !== players.p1.lastY) && players.p1.alive && gameRunning) {
+            playFootstep();
+        }
+        if ((players.p2.x !== players.p2.lastX || players.p2.y !== players.p2.lastY) && players.p2.alive && gameRunning) {
+            playFootstep();
+        }
+    }
 }
 
 // ========== COLLISION & GAME LOGIC ==========
@@ -154,6 +371,7 @@ function checkRelicCollection() {
                 relic.collected = true;
                 collectedRelics++;
                 updateRelicDisplay();
+                playRelicSound();
                 
                 // Add particle effect
                 for (let i = 0; i < 15; i++) {
@@ -161,17 +379,23 @@ function checkRelicCollection() {
                         x: relic.x, y: relic.y, 
                         vx: (Math.random() - 0.5) * 4, 
                         vy: (Math.random() - 0.5) * 4 - 2,
-                        life: 1, color: '#ffd966'
+                        life: 1, color: '#fbbf24'
                     });
                 }
                 
                 // Increase spirit anger
                 spirit.anger = Math.min(100, spirit.anger + 33);
                 
+                // Play spirit growl when anger increases
+                if (spirit.anger >= 33) {
+                    playSpiritSound();
+                }
+                
                 // Activate exit when all relics collected
                 if (collectedRelics >= TOTAL_RELICS) {
                     exitGate.active = true;
                     spirit.active = true;
+                    playSpiritSound();
                 }
             }
         }
@@ -182,21 +406,23 @@ function checkExit() {
     if (!exitGate.active) return;
     
     const bothAtExit = (players.p1.alive && players.p2.alive &&
-        Math.hypot(players.p1.x - exitGate.x, players.p1.y - exitGate.y) < 30 &&
-        Math.hypot(players.p2.x - exitGate.x, players.p2.y - exitGate.y) < 30);
+        Math.hypot(players.p1.x - exitGate.x, players.p1.y - exitGate.y) < 35 &&
+        Math.hypot(players.p2.x - exitGate.x, players.p2.y - exitGate.y) < 35);
     
     if (bothAtExit && !winCondition) {
         winCondition = true;
         gameRunning = false;
-        document.getElementById('winMessage').classList.remove('hidden');
+        playVictorySound();
+        stopAmbientDrone();
+        document.getElementById('winOverlay').classList.remove('hidden');
     }
 }
 
 function updateSpirit() {
     if (!spirit.active) {
         // Spirit wanders slowly
-        spirit.x += (Math.random() - 0.5) * 1.5;
-        spirit.y += (Math.random() - 0.5) * 1.5;
+        spirit.x += (Math.random() - 0.5) * 1.2;
+        spirit.y += (Math.random() - 0.5) * 1.2;
         spirit.x = Math.max(20, Math.min(MAP_WIDTH - 20, spirit.x));
         spirit.y = Math.max(20, Math.min(MAP_HEIGHT - 20, spirit.y));
         return;
@@ -229,6 +455,7 @@ function updateSpirit() {
     for (let [id, player] of Object.entries(players)) {
         if (player.alive && Math.hypot(spirit.x - player.x, spirit.y - player.y) < 30) {
             player.alive = false;
+            playDeathSound();
             updateStatusDisplay();
             
             // Death particles
@@ -243,7 +470,8 @@ function updateSpirit() {
             
             if (!players.p1.alive || !players.p2.alive) {
                 gameRunning = false;
-                document.getElementById('loseMessage').classList.remove('hidden');
+                stopAmbientDrone();
+                document.getElementById('loseOverlay').classList.remove('hidden');
             }
         }
     }
@@ -266,40 +494,68 @@ function updateParticles() {
 function updateRelicDisplay() {
     document.getElementById('relicCount').innerText = collectedRelics;
     document.getElementById('totalRelics').innerText = TOTAL_RELICS;
+    const progressPercent = (collectedRelics / TOTAL_RELICS) * 100;
+    const progressBar = document.getElementById('relicProgress');
+    if (progressBar) {
+        progressBar.style.width = progressPercent + '%';
+    }
 }
 
 function updateStatusDisplay() {
-    document.getElementById('p1Status').innerHTML = players.p1.alive ? '🟢 Alive' : '🔴 Consumed';
-    document.getElementById('p2Status').innerHTML = players.p2.alive ? '🟢 Alive' : '🔴 Consumed';
+    const p1Status = document.getElementById('p1Status');
+    const p2Status = document.getElementById('p2Status');
+    const p1Dot = p1Status?.querySelector('.status-dot');
+    const p2Dot = p2Status?.querySelector('.status-dot');
     
-    if (!players.p1.alive) document.getElementById('p1Status').style.color = '#ff6666';
-    if (!players.p2.alive) document.getElementById('p2Status').style.color = '#ff6666';
+    if (players.p1.alive) {
+        if (p1Status) p1Status.innerHTML = '<span class="status-dot active"></span> ACTIVE';
+        if (p1Dot) p1Dot.classList.remove('inactive');
+    } else {
+        if (p1Status) p1Status.innerHTML = '<span class="status-dot inactive"></span> CONSUMED';
+        if (p1Dot) p1Dot.classList.add('inactive');
+    }
+    
+    if (players.p2.alive) {
+        if (p2Status) p2Status.innerHTML = '<span class="status-dot active"></span> ACTIVE';
+        if (p2Dot) p2Dot.classList.remove('inactive');
+    } else {
+        if (p2Status) p2Status.innerHTML = '<span class="status-dot inactive"></span> CONSUMED';
+        if (p2Dot) p2Dot.classList.add('inactive');
+    }
 }
 
 // ========== RENDERING ==========
 function drawBackground() {
     // Gradient sky
     const grad = ctx.createLinearGradient(0, 0, 0, MAP_HEIGHT);
-    grad.addColorStop(0, '#0a0e1a');
-    grad.addColorStop(1, '#151a2a');
+    grad.addColorStop(0, '#0a0c14');
+    grad.addColorStop(1, '#12141c');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
     
-    // Fog/mist
-    ctx.fillStyle = 'rgba(80, 100, 130, 0.05)';
-    for (let i = 0; i < 30; i++) {
+    // Fog/mist effect
+    ctx.fillStyle = 'rgba(80, 100, 130, 0.03)';
+    for (let i = 0; i < 40; i++) {
         ctx.beginPath();
-        ctx.arc(Math.sin(Date.now() * 0.001 + i) * 200 + i * 100, 
-                Math.cos(Date.now() * 0.0007 + i) * 100 + 300, 80, 0, Math.PI*2);
+        ctx.ellipse(
+            Math.sin(Date.now() * 0.0008 + i) * 150 + i * 50,
+            Math.cos(Date.now() * 0.0005 + i) * 100 + 300,
+            120, 60, 0, 0, Math.PI * 2
+        );
         ctx.fill();
     }
     
-    // Ground texture
-    ctx.strokeStyle = 'rgba(100, 120, 150, 0.2)';
-    for (let i = 0; i < 200; i++) {
+    // Grid pattern
+    ctx.strokeStyle = 'rgba(100, 120, 150, 0.08)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < MAP_WIDTH; i += 50) {
         ctx.beginPath();
-        ctx.moveTo(i * 30, MAP_HEIGHT);
-        ctx.lineTo(i * 30 + 20, MAP_HEIGHT - 50);
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, MAP_HEIGHT);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(MAP_WIDTH, i);
         ctx.stroke();
     }
 }
@@ -307,34 +563,50 @@ function drawBackground() {
 function drawExit() {
     if (!exitGate.active) return;
     
-    // Glowing portal
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#44ffaa';
-    ctx.fillStyle = 'rgba(68, 255, 170, 0.3)';
+    // Animated portal
+    const pulse = Math.sin(Date.now() * 0.008) * 0.1 + 0.2;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = '#4ade80';
+    ctx.fillStyle = `rgba(74, 222, 128, ${0.2 + pulse})`;
     ctx.beginPath();
-    ctx.arc(exitGate.x, exitGate.y, exitGate.size/2, 0, Math.PI*2);
+    ctx.arc(exitGate.x, exitGate.y, EXIT_SIZE/2, 0, Math.PI*2);
     ctx.fill();
     
-    ctx.fillStyle = '#44ffaa';
-    ctx.font = '30px monospace';
+    // Outer ring
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(exitGate.x, exitGate.y, EXIT_SIZE/2 + 4, 0, Math.PI*2);
+    ctx.stroke();
+    
+    // Portal symbol
+    ctx.fillStyle = '#4ade80';
+    ctx.font = 'bold 28px "Inter", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🚪', exitGate.x, exitGate.y);
+    ctx.fillText('◉', exitGate.x, exitGate.y);
     ctx.shadowBlur = 0;
 }
 
 function drawRelics() {
     for (let relic of relics) {
         if (!relic.collected) {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#ffaa44';
-            ctx.fillStyle = '#ffaa44';
+            const glow = Math.sin(Date.now() * 0.01) * 0.1 + 0.3;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#fbbf24';
+            ctx.fillStyle = `rgba(251, 191, 36, ${0.4 + glow})`;
             ctx.beginPath();
-            ctx.arc(relic.x, relic.y, relic.size/2, 0, Math.PI*2);
+            ctx.arc(relic.x, relic.y, RELIC_SIZE/2 + 3, 0, Math.PI*2);
             ctx.fill();
+            
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(relic.x, relic.y, RELIC_SIZE/2 - 2, 0, Math.PI*2);
+            ctx.fill();
+            
             ctx.fillStyle = '#ffffff';
-            ctx.font = '16px monospace';
-            ctx.fillText('🔮', relic.x-8, relic.y+6);
+            ctx.font = '14px "Inter", monospace';
+            ctx.fillText('✦', relic.x - 4, relic.y + 5);
             ctx.shadowBlur = 0;
         }
     }
@@ -344,104 +616,16 @@ function drawPlayers() {
     for (let [id, p] of Object.entries(players)) {
         if (!p.alive) continue;
         
-        // Glow
-        ctx.shadowBlur = 12;
+        // Glow effect
+        ctx.shadowBlur = 15;
         ctx.shadowColor = p.color;
+        
+        // Outer ring
         ctx.fillStyle = p.colorLight;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size/2 + 2, 0, Math.PI*2);
+        ctx.arc(p.x, p.y, p.size/2 + 3, 0, Math.PI*2);
         ctx.fill();
         
+        // Body
         ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2);
-        ctx.fill();
         
-        // Eyes
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(p.x - 6, p.y - 4, 4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(p.x + 6, p.y - 4, 4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(p.x - 6 + (Math.sin(Date.now() * 0.01) * 1), p.y - 4, 2, 0, Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(p.x + 6 + (Math.sin(Date.now() * 0.01) * 1), p.y - 4, 2, 0, Math.PI*2);
-        ctx.fill();
-        
-        // Name tag
-        ctx.font = 'bold 12px monospace';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 3;
-        ctx.fillText(id === 'p1' ? 'P1' : 'P2', p.x-6, p.y-14);
-    }
-    ctx.shadowBlur = 0;
-}
-
-function drawSpirit() {
-    if (!spirit.active && spirit.anger < 30) return;
-    
-    let intensity = 0.3 + (spirit.anger / 150);
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = `rgba(100, 50, 150, ${intensity})`;
-    
-    // Wraith body
-    ctx.fillStyle = `rgba(80, 50, 120, ${0.6 + intensity})`;
-    ctx.beginPath();
-    ctx.ellipse(spirit.x, spirit.y, spirit.size/2, spirit.size/1.5, 0, 0, Math.PI*2);
-    ctx.fill();
-    
-    ctx.fillStyle = `rgba(160, 80, 200, ${0.5 + intensity})`;
-    ctx.beginPath();
-    ctx.ellipse(spirit.x-5, spirit.y-5, 8, 10, 0, 0, Math.PI*2);
-    ctx.ellipse(spirit.x+5, spirit.y-5, 8, 10, 0, 0, Math.PI*2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#ff44aa';
-    ctx.font = '28px monospace';
-    ctx.fillText('👻', spirit.x-12, spirit.y+8);
-    ctx.shadowBlur = 0;
-}
-
-function drawParticles() {
-    for (let p of particles) {
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x-2, p.y-2, 4, 4);
-    }
-    ctx.globalAlpha = 1;
-}
-
-// ========== GAME LOOP ==========
-function update() {
-    if (!gameRunning) return;
-    
-    updateMovement();
-    checkRelicCollection();
-    updateSpirit();
-    checkExit();
-    updateParticles();
-}
-
-function draw() {
-    drawBackground();
-    drawExit();
-    drawRelics();
-    drawPlayers();
-    drawSpirit();
-    drawParticles();
-}
-
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
-
-// ========== START GAME ==========
-initGame();
-gameLoop();
