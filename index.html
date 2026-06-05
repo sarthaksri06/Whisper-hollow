@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Whisper Hollow | 2-Player Co-op Horror</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,62 +14,47 @@
         }
 
         body {
-            background: radial-gradient(circle at 30% 20%, #0a0a0f, #020208);
+            background: #0a0a0f;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Inter', sans-serif;
+            font-family: system-ui, -apple-system, 'Inter', sans-serif;
         }
 
-        .game-wrapper {
+        .game-container {
             padding: 20px;
-        }
-
-        /* Canvas */
-        .canvas-stage {
-            position: relative;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
         }
 
         canvas {
             display: block;
-            background: #0c0c14;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             cursor: none;
         }
 
-        /* Bottom bar */
-        .game-bar {
+        .controls {
             margin-top: 16px;
             display: flex;
+            gap: 12px;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        /* Player cards */
         .player-card {
-            flex: 1;
-            background: rgba(16, 16, 24, 0.85);
-            backdrop-filter: blur(12px);
+            background: #14141c;
             border-radius: 20px;
             padding: 10px 18px;
             display: flex;
             align-items: center;
             gap: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.2s ease;
+            flex: 1;
+            border: 1px solid #2a2a30;
         }
 
-        .player-card[data-player="1"] {
-            border-left: 3px solid #ff4d4d;
-        }
-
-        .player-card[data-player="2"] {
-            border-left: 3px solid #4d8aff;
-        }
+        .player1-card { border-left: 3px solid #ff4444; }
+        .player2-card { border-left: 3px solid #4488ff; }
 
         .avatar {
             width: 44px;
@@ -78,311 +63,592 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
+            font-weight: bold;
             font-size: 18px;
-        }
-
-        .avatar.p1 {
-            background: linear-gradient(135deg, #ff4d4d, #cc2222);
-            box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
             color: white;
         }
 
-        .avatar.p2 {
-            background: linear-gradient(135deg, #4d8aff, #2255cc);
-            box-shadow: 0 4px 12px rgba(77, 138, 255, 0.3);
-            color: white;
-        }
+        .avatar.p1 { background: #ff4444; box-shadow: 0 0 10px rgba(255,68,68,0.3); }
+        .avatar.p2 { background: #4488ff; box-shadow: 0 0 10px rgba(68,136,255,0.3); }
 
-        .player-details {
+        .player-info {
             flex: 1;
         }
 
-        .player-title {
-            font-weight: 700;
+        .player-name {
             font-size: 12px;
+            color: #888;
             letter-spacing: 0.5px;
-            color: #aaa;
         }
 
-        .key-row {
+        .keys {
             display: flex;
             gap: 6px;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         kbd {
             background: #0a0a10;
+            border: 1px solid #333;
             border-radius: 8px;
             padding: 3px 8px;
             font-size: 11px;
-            font-weight: 600;
             font-family: monospace;
             color: #ccc;
-            border: 1px solid #2a2a30;
         }
 
-        .status-badge {
+        .status {
             font-size: 11px;
-            font-weight: 700;
-            padding: 5px 12px;
-            border-radius: 30px;
-            background: rgba(74, 222, 128, 0.12);
-            color: #4ade80;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #1a1a24;
         }
 
-        .status-badge.dead {
-            background: rgba(239, 68, 68, 0.12);
-            color: #ef4444;
-        }
+        .status.alive { color: #4ade80; }
+        .status.dead { color: #ef4444; }
 
-        /* Center panel */
         .info-panel {
-            background: rgba(16, 16, 24, 0.85);
-            backdrop-filter: blur(12px);
+            background: #14141c;
             border-radius: 20px;
             padding: 8px 24px;
             display: flex;
             align-items: center;
             gap: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid #2a2a30;
         }
 
-        .relic-group {
+        .relic-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .relic-badge {
-            width: 40px;
-            height: 40px;
-            background: rgba(251, 191, 36, 0.12);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .relic-counter {
-            font-weight: 800;
-            font-size: 26px;
+        .relic-count {
+            font-size: 28px;
+            font-weight: bold;
             color: #fbbf24;
-            letter-spacing: -1px;
         }
 
         .relic-label {
             font-size: 10px;
             color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
-        /* Buttons */
-        .btn-reset {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        button {
+            background: #2a2a34;
+            border: none;
             padding: 10px 22px;
             border-radius: 40px;
+            color: white;
             font-weight: 600;
             font-size: 13px;
-            color: #ccc;
             cursor: pointer;
             transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
-        .btn-reset:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: white;
+        button:hover {
+            background: #3a3a44;
             transform: scale(0.97);
         }
 
-        .btn-sound {
-            background: rgba(16, 16, 24, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        .sound-btn {
             width: 48px;
             height: 48px;
             border-radius: 20px;
+            background: #14141c;
+            border: 1px solid #2a2a30;
+            font-size: 20px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            font-size: 20px;
-            transition: 0.2s;
         }
 
-        .btn-sound:hover {
-            background: rgba(30, 30, 40, 0.9);
-            transform: scale(0.96);
-        }
-
-        /* Modals */
-        .modal-overlay {
+        .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.88);
-            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.9);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 100;
         }
 
-        .modal {
-            background: linear-gradient(135deg, #14141c, #0c0c14);
-            border-radius: 36px;
-            padding: 42px 56px;
+        .modal-content {
+            background: #14141c;
+            padding: 40px 60px;
+            border-radius: 32px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            animation: modalPop 0.28s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border: 1px solid #333;
         }
 
-        @keyframes modalPop {
-            from {
-                opacity: 0;
-                transform: scale(0.94) translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+        .modal-content h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
         }
 
-        .modal-icon {
-            width: 76px;
-            height: 76px;
-            margin: 0 auto 20px;
-            border-radius: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 38px;
-        }
-
-        .modal-icon.win {
-            background: rgba(74, 222, 128, 0.1);
-            border: 1px solid #4ade80;
-        }
-
-        .modal-icon.lose {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid #ef4444;
-        }
-
-        .modal h2 {
-            font-size: 30px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-
-        .modal p {
+        .modal-content p {
             color: #888;
-            margin-bottom: 28px;
-        }
-
-        .modal-btn {
-            background: #2a2a34;
-            border: none;
-            padding: 12px 36px;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 14px;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .modal-btn:hover {
-            background: #3a3a44;
+            margin-bottom: 24px;
         }
 
         .hidden {
             display: none;
         }
-
-        @media (max-width: 1000px) {
-            .game-wrapper { transform: scale(0.92); transform-origin: center; }
-        }
     </style>
 </head>
 <body>
-    <div class="game-wrapper">
-        <div class="canvas-stage">
-            <canvas id="gameCanvas" width="1000" height="600"></canvas>
-        </div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
 
-        <div class="game-bar">
+        <div class="controls">
             <!-- Player 1 -->
-            <div class="player-card" data-player="1">
+            <div class="player-card player1-card">
                 <div class="avatar p1">P1</div>
-                <div class="player-details">
-                    <div class="player-title">VANGUARD</div>
-                    <div class="key-row">
+                <div class="player-info">
+                    <div class="player-name">VANGUARD</div>
+                    <div class="keys">
                         <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
                     </div>
                 </div>
-                <div class="status-badge" id="p1Status">ACTIVE</div>
+                <div class="status alive" id="p1Status">● ACTIVE</div>
             </div>
 
             <!-- Center -->
             <div class="info-panel">
-                <div class="relic-group">
-                    <div class="relic-badge">🔮</div>
+                <div class="relic-info">
+                    <span class="relic-count" id="relicCount">0</span>
                     <div>
-                        <div class="relic-counter"><span id="relicCount">0</span>/<span id="totalRelics">3</span></div>
+                        <div class="relic-count" style="font-size:14px;">/ <span id="totalRelics">3</span></div>
                         <div class="relic-label">REMAINING</div>
                     </div>
                 </div>
-                <button class="btn-reset" id="resetBtn">
-                    <span>⟳</span> NEW GAME
-                </button>
+                <button id="resetBtn">⟳ NEW GAME</button>
             </div>
 
             <!-- Player 2 -->
-            <div class="player-card" data-player="2">
+            <div class="player-card player2-card">
                 <div class="avatar p2">P2</div>
-                <div class="player-details">
-                    <div class="player-title">SPECTRE</div>
-                    <div class="key-row">
+                <div class="player-info">
+                    <div class="player-name">SPECTRE</div>
+                    <div class="keys">
                         <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
                     </div>
                 </div>
-                <div class="status-badge" id="p2Status">ACTIVE</div>
+                <div class="status alive" id="p2Status">● ACTIVE</div>
             </div>
 
-            <!-- Sound -->
-            <div class="btn-sound" id="soundBtn">🔊</div>
+            <div class="sound-btn" id="soundBtn">🔊</div>
         </div>
     </div>
 
-    <!-- Modals -->
-    <div id="winModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-icon win">✨</div>
+    <div id="winModal" class="modal hidden">
+        <div class="modal-content">
+            <div style="font-size: 48px; margin-bottom: 16px;">✨</div>
             <h2>ESCAPE SUCCESSFUL</h2>
             <p>Both souls fled the hollow</p>
-            <button class="modal-btn" onclick="resetGame()">PLAY AGAIN</button>
+            <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
     </div>
 
-    <div id="loseModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-icon lose">💀</div>
+    <div id="loseModal" class="modal hidden">
+        <div class="modal-content">
+            <div style="font-size: 48px; margin-bottom: 16px;">💀</div>
             <h2>THE HOLLOW CLAIMS ALL</h2>
             <p>A spirit consumed one of you</p>
-            <button class="modal-btn" onclick="resetGame()">TRY AGAIN</button>
+            <button onclick="location.reload()">TRY AGAIN</button>
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <script>
+        // ========== GAME SETUP ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const MAP_W = 1000;
+        const MAP_H = 600;
+        const PLAYER_SIZE = 24;
+        const SPIRIT_SIZE = 32;
+        const RELIC_SIZE = 20;
+        const EXIT_SIZE = 40;
+        
+        let gameRunning = true;
+        let collectedRelics = 0;
+        const TOTAL_RELICS = 3;
+        
+        // Players
+        const players = {
+            p1: { x: 150, y: 300, alive: true, color: '#ff4444', colorLight: '#ff6666', keys: { w: false, s: false, a: false, d: false } },
+            p2: { x: 850, y: 300, alive: true, color: '#4488ff', colorLight: '#66aaff', keys: { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false } }
+        };
+        
+        // Relics
+        let relics = [
+            { x: 200, y: 200, collected: false },
+            { x: 500, y: 450, collected: false },
+            { x: 800, y: 150, collected: false }
+        ];
+        
+        // Spirit
+        let spirit = { x: 500, y: 300, active: false, anger: 0 };
+        
+        // Exit
+        let exitGate = { x: 950, y: 50, active: false };
+        
+        // Particles
+        let particles = [];
+        
+        // ========== INPUT ==========
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (key === 'w') players.p1.keys.w = true;
+            if (key === 's') players.p1.keys.s = true;
+            if (key === 'a') players.p1.keys.a = true;
+            if (key === 'd') players.p1.keys.d = true;
+            if (key === 'ArrowUp') players.p2.keys.ArrowUp = true;
+            if (key === 'ArrowDown') players.p2.keys.ArrowDown = true;
+            if (key === 'ArrowLeft') players.p2.keys.ArrowLeft = true;
+            if (key === 'ArrowRight') players.p2.keys.ArrowRight = true;
+            if (['w','s','a','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)) {
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            const key = e.key;
+            if (key === 'w') players.p1.keys.w = false;
+            if (key === 's') players.p1.keys.s = false;
+            if (key === 'a') players.p1.keys.a = false;
+            if (key === 'd') players.p1.keys.d = false;
+            if (key === 'ArrowUp') players.p2.keys.ArrowUp = false;
+            if (key === 'ArrowDown') players.p2.keys.ArrowDown = false;
+            if (key === 'ArrowLeft') players.p2.keys.ArrowLeft = false;
+            if (key === 'ArrowRight') players.p2.keys.ArrowRight = false;
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            location.reload();
+        });
+        
+        // Sound toggle
+        let soundOn = true;
+        document.getElementById('soundBtn').addEventListener('click', () => {
+            soundOn = !soundOn;
+            document.getElementById('soundBtn').innerHTML = soundOn ? '🔊' : '🔇';
+        });
+        
+        // ========== MOVEMENT ==========
+        const SPEED = 3.8;
+        
+        function movePlayer(player, keys, up, down, left, right) {
+            if (!player.alive) return;
+            
+            let newX = player.x;
+            let newY = player.y;
+            
+            if (keys[up]) newY -= SPEED;
+            if (keys[down]) newY += SPEED;
+            if (keys[left]) newX -= SPEED;
+            if (keys[right]) newX += SPEED;
+            
+            player.x = Math.max(PLAYER_SIZE/2 + 5, Math.min(MAP_W - PLAYER_SIZE/2 - 5, newX));
+            player.y = Math.max(PLAYER_SIZE/2 + 5, Math.min(MAP_H - PLAYER_SIZE/2 - 5, newY));
+        }
+        
+        // ========== GAME LOGIC ==========
+        function checkRelicCollection() {
+            for (let i = 0; i < relics.length; i++) {
+                const r = relics[i];
+                if (!r.collected && players.p1.alive && players.p2.alive) {
+                    const dist1 = Math.hypot(players.p1.x - r.x, players.p1.y - r.y);
+                    const dist2 = Math.hypot(players.p2.x - r.x, players.p2.y - r.y);
+                    
+                    if (dist1 < 30 && dist2 < 30) {
+                        r.collected = true;
+                        collectedRelics++;
+                        document.getElementById('relicCount').innerText = collectedRelics;
+                        
+                        // Particles
+                        for (let j = 0; j < 12; j++) {
+                            particles.push({
+                                x: r.x, y: r.y,
+                                vx: (Math.random() - 0.5) * 5,
+                                vy: (Math.random() - 0.5) * 5 - 2,
+                                life: 1
+                            });
+                        }
+                        
+                        spirit.anger = Math.min(100, spirit.anger + 33);
+                        
+                        if (collectedRelics >= TOTAL_RELICS) {
+                            exitGate.active = true;
+                            spirit.active = true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function checkExit() {
+            if (!exitGate.active) return;
+            
+            const bothAtExit = players.p1.alive && players.p2.alive &&
+                Math.hypot(players.p1.x - exitGate.x, players.p1.y - exitGate.y) < 40 &&
+                Math.hypot(players.p2.x - exitGate.x, players.p2.y - exitGate.y) < 40;
+            
+            if (bothAtExit && gameRunning) {
+                gameRunning = false;
+                document.getElementById('winModal').classList.remove('hidden');
+            }
+        }
+        
+        function updateSpirit() {
+            if (!spirit.active) {
+                spirit.x += (Math.random() - 0.5) * 1.2;
+                spirit.y += (Math.random() - 0.5) * 1.2;
+                spirit.x = Math.max(30, Math.min(MAP_W - 30, spirit.x));
+                spirit.y = Math.max(30, Math.min(MAP_H - 30, spirit.y));
+                return;
+            }
+            
+            // Find closest alive player
+            let target = null;
+            let closestDist = Infinity;
+            
+            if (players.p1.alive) {
+                const d = Math.hypot(spirit.x - players.p1.x, spirit.y - players.p1.y);
+                if (d < closestDist) { closestDist = d; target = players.p1; }
+            }
+            if (players.p2.alive) {
+                const d = Math.hypot(spirit.x - players.p2.x, spirit.y - players.p2.y);
+                if (d < closestDist) { closestDist = d; target = players.p2; }
+            }
+            
+            if (target) {
+                const angle = Math.atan2(target.y - spirit.y, target.x - spirit.x);
+                const spd = 2.5 + (spirit.anger / 60);
+                spirit.x += Math.cos(angle) * spd;
+                spirit.y += Math.sin(angle) * spd;
+            }
+            
+            // Check catch
+            for (let [id, player] of Object.entries(players)) {
+                if (player.alive && Math.hypot(spirit.x - player.x, spirit.y - player.y) < 32) {
+                    player.alive = false;
+                    
+                    // Update UI
+                    const statusEl = document.getElementById(id === 'p1' ? 'p1Status' : 'p2Status');
+                    statusEl.innerHTML = '● CONSUMED';
+                    statusEl.classList.remove('alive');
+                    statusEl.classList.add('dead');
+                    
+                    // Particles
+                    for (let j = 0; j < 20; j++) {
+                        particles.push({
+                            x: player.x, y: player.y,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6 - 2,
+                            life: 1
+                        });
+                    }
+                    
+                    if (!players.p1.alive || !players.p2.alive) {
+                        gameRunning = false;
+                        document.getElementById('loseModal').classList.remove('hidden');
+                    }
+                }
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2;
+                p.life -= 0.02;
+                if (p.life <= 0 || p.y > MAP_H) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        // ========== RENDERING ==========
+        function drawBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, MAP_H);
+            grad.addColorStop(0, '#0f0f17');
+            grad.addColorStop(1, '#07070c');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, MAP_W, MAP_H);
+            
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < MAP_W; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, MAP_H);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(MAP_W, i);
+                ctx.stroke();
+            }
+        }
+        
+        function drawExit() {
+            if (!exitGate.active) return;
+            
+            const pulse = Math.sin(Date.now() * 0.008) * 0.15 + 0.25;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#4ade80';
+            ctx.fillStyle = `rgba(74, 222, 128, ${pulse})`;
+            ctx.beginPath();
+            ctx.arc(exitGate.x, exitGate.y, EXIT_SIZE/2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle = '#4ade80';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(exitGate.x, exitGate.y, EXIT_SIZE/2 + 5, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.fillStyle = '#4ade80';
+            ctx.font = '30px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('◉', exitGate.x, exitGate.y);
+            ctx.shadowBlur = 0;
+        }
+        
+        function drawRelics() {
+            for (let r of relics) {
+                if (!r.collected) {
+                    const glow = Math.sin(Date.now() * 0.01) * 0.1 + 0.3;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.fillStyle = `rgba(251, 191, 36, ${0.3 + glow})`;
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, RELIC_SIZE/2 + 3, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, RELIC_SIZE/2 - 2, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = 'white';
+                    ctx.font = '16px monospace';
+                    ctx.fillText('✦', r.x - 5, r.y + 5);
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+        
+        function drawPlayers() {
+            for (let [id, p] of Object.entries(players)) {
+                if (!p.alive) continue;
+                
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = p.color;
+                ctx.fillStyle = p.colorLight;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, PLAYER_SIZE/2 + 3, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, PLAYER_SIZE/2, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(p.x - 6, p.y - 4, 4, 0, Math.PI*2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(p.x + 6, p.y - 4, 4, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = '#0f0f17';
+                ctx.beginPath();
+                ctx.arc(p.x - 6, p.y - 4, 2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(p.x + 6, p.y - 4, 2, 0, Math.PI*2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        function drawSpirit() {
+            if (!spirit.active && spirit.anger < 25) return;
+            
+            const intensity = 0.3 + (spirit.anger / 120);
+            const flicker = Math.sin(Date.now() * 0.02) * 0.1;
+            
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = `rgba(160, 80, 200, ${0.4 + intensity + flicker})`;
+            ctx.fillStyle = `rgba(120, 70, 160, ${0.5 + intensity * 0.4})`;
+            ctx.beginPath();
+            ctx.ellipse(spirit.x, spirit.y, SPIRIT_SIZE/2, SPIRIT_SIZE/1.5, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.fillStyle = `rgba(255, 100, 140, ${0.7 + flicker})`;
+            ctx.beginPath();
+            ctx.arc(spirit.x - 8, spirit.y - 5, 5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(spirit.x + 8, spirit.y - 5, 5, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(spirit.x - 8, spirit.y - 6, 2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(spirit.x + 8, spirit.y - 6, 2, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+        }
+        
+        function drawParticles() {
+            for (let p of particles) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = '#ffaa44';
+                ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+            }
+            ctx.globalAlpha = 1;
+        }
+        
+        // ========== GAME LOOP ==========
+        function update() {
+            if (!gameRunning) return;
+            
+            movePlayer(players.p1, players.p1.keys, 'w', 's', 'a', 'd');
+            movePlayer(players.p2, players.p2.keys, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight');
+            checkRelicCollection();
+            updateSpirit();
+            checkExit();
+            updateParticles();
+        }
+        
+        function draw() {
+            drawBackground();
+            drawExit();
+            drawRelics();
+            drawPlayers();
+            drawSpirit();
+            drawParticles();
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        gameLoop();
+    </script>
 </body>
 </html>
